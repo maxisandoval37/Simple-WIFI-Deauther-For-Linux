@@ -35,19 +35,27 @@ done
 
 # 4) BSSIDs (MACs) para ese SSID
 mapfile -t BSSIDS < <(
-  nmcli -t -f BSSID,SSID,SIGNAL dev wifi list ifname "$IFACE" \
+  nmcli -f BSSID,SSID,SIGNAL dev wifi list ifname "$IFACE" \
   | awk -v target="$SSID" '
+      NR==1 {next}  # saltear header
       {
-        mac = substr($0, 1, 17)          # AA:BB:CC:DD:EE:FF
-        rest = substr($0, 19)            # SSID:SIGNAL  (ojo, SSID puede tener :)
-        sig = rest; sub(/^.*:/, "", sig) # último campo = SIGNAL
-        ss  = rest; sub(/:[^:]*$/, "", ss) # todo menos el último campo = SSID
-        if (ss == target) print mac
-      }'
+        mac=$1
+        sig=$NF
+
+        $1=""; $NF=""
+        sub(/^ +/, "", $0)
+        sub(/ +$/, "", $0)
+        ss=$0
+
+        if (ss==target && mac ~ /^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/) print mac
+      }' \
+  | awk '!seen[$0]++'
 )
 
 if [ ${#BSSIDS[@]} -eq 0 ]; then
-  echo "No encontré BSSID para '$SSID' en $IFACE. Probar un rescan y reintentar."
+  echo "No encontré BSSID para '$SSID' en $IFACE."
+  echo "Debug:"
+  nmcli -f BSSID,SSID,SIGNAL dev wifi list ifname "$IFACE" | sed -n '1,25p'
   exit 1
 fi
 
