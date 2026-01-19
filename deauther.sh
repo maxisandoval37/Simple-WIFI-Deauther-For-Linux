@@ -35,11 +35,21 @@ done
 
 # 4) BSSIDs (MACs) para ese SSID
 mapfile -t BSSIDS < <(
-  nmcli -g BSSID,SSID dev wifi list ifname "$IFACE" \
-  | awk -F: -v ssid="$SSID" '$2==ssid {print $1}'
+  nmcli -t -f BSSID,SSID,SIGNAL dev wifi list ifname "$IFACE" \
+  | awk -v target="$SSID" '
+      {
+        mac = substr($0, 1, 17)          # AA:BB:CC:DD:EE:FF
+        rest = substr($0, 19)            # SSID:SIGNAL  (ojo, SSID puede tener :)
+        sig = rest; sub(/^.*:/, "", sig) # último campo = SIGNAL
+        ss  = rest; sub(/:[^:]*$/, "", ss) # todo menos el último campo = SSID
+        if (ss == target) print mac
+      }'
 )
 
-[ ${#BSSIDS[@]} -eq 0 ] && { echo "SSID sin BSSID visible."; exit 1; }
+if [ ${#BSSIDS[@]} -eq 0 ]; then
+  echo "No encontré BSSID para '$SSID' en $IFACE. Probar un rescan y reintentar."
+  exit 1
+fi
 
 echo "Selecciona la MAC (BSSID):"
 select BSSID in "${BSSIDS[@]}" "Salir"; do
