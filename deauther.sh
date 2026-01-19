@@ -29,8 +29,22 @@ echo "Habilitando modo monitor en $IFACE..."
 airmon-ng start "$IFACE" >/dev/null
 
 # Resolver nombre real en monitor (wlan0mon / mon0)
-MON_IFACE="$(airmon-ng 2>/dev/null | awk -v i="$IFACE" '$2==i {print $1}' | tail -n1)"
-MON_IFACE="${MON_IFACE:-${IFACE}mon}"
+sleep 1
+
+MON_IFACE="$(iw dev | awk '/Interface/ {iface=$2} /type monitor/ {print iface}')"
+
+# Fallbacks razonables
+if [[ -z "${MON_IFACE:-}" ]]; then
+  if iw dev | grep -q "^Interface ${IFACE}mon"; then
+    MON_IFACE="${IFACE}mon"
+  elif iw dev | grep -q "^Interface mon0"; then
+    MON_IFACE="mon0"
+  else
+    echo "No se pudo detectar interfaz en modo monitor"
+    iw dev
+    exit 1
+  fi
+fi
 
 echo "Interfaz en monitor: $MON_IFACE"
 
