@@ -35,8 +35,8 @@ done
 
 # 4) BSSIDs (MACs) para ese SSID
 mapfile -t BSSIDS < <(
-  nmcli -t --separator ';' -f BSSID,SSID dev wifi list ifname "$IFACE" \
-  | awk -F';' -v ssid="$SSID" '$2==ssid {print $1}'
+  nmcli -g BSSID,SSID dev wifi list ifname "$IFACE" \
+  | awk -F: -v ssid="$SSID" '$2==ssid {print $1}'
 )
 
 [ ${#BSSIDS[@]} -eq 0 ] && { echo "SSID sin BSSID visible."; exit 1; }
